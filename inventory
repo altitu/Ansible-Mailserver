@@ -1,0 +1,2 @@
+[mailserver]
+mailserver ansible_host=xxx.xxx.xxx.xxx

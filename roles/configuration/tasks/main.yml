@@ -1,0 +1,159 @@
+- name: Create Dovecot Diffie-Hellman shared keyfile
+  command:
+    cmd: "openssl dhparam -out dh.pem 4096"
+    chdir: /etc/dovecot/
+    creates: /etc/dovecot/dh.pem
+
+- name: Modify this keyfile permission
+  file:
+    state: file
+    path: /etc/dovecot/dh.pem
+    owner: dovecot
+    group: dovecot
+    mode: '600'
+
+- name: Copy Dovecot configuration
+  copy:
+    src: dovecot
+    dest: /etc/
+    owner: root
+    group: dovecot
+    directory_mode: '755'
+    mode: '640'
+
+- name: Copy Dovecot templates
+  block:
+  - name: Copy Dovecot template ssl configuration
+    template:
+      src: dovecot/conf.d/10-ssl.conf.j2
+      dest: /etc/dovecot/conf.d/10-ssl.conf
+      owner: root
+      group: dovecot
+      mode: '640'
+  - name: Copy Dovecot template sql configuration
+    template:
+      src: dovecot/dovecot-sql.conf.ext.j2
+      dest: /etc/dovecot/dovecot-sql.conf.ext
+      owner: root
+      group: dovecot
+      mode: '640'  
+
+- name: Copy Postfix configuration
+  copy:
+    src: postfix
+    dest: /etc/
+    owner: root
+    group: root
+    directory_mode: '755'
+    mode: '644'
+
+- name: Copy Postfix template
+  block:
+  - name: Copy Postfix main.cf template
+    template:
+      src: postfix/main.cf.j2
+      dest: /etc/postfix/main.cf
+      owner: root
+      group: root
+      mode: '644'
+  - name: Copy Postfix mysql-virtual-alias-maps.cf template
+    template:
+      src: postfix/mysql-virtual-alias-maps.cf.j2
+      dest: /etc/postfix/mysql-virtual-alias-maps.cf
+      owner: root
+      group: root
+      mode: '644'
+  - name: Copy Postfix mysql-virtual-mailbox-domains.cf template
+    template:
+      src: postfix/mysql-virtual-mailbox-domains.cf.j2
+      dest: /etc/postfix/mysql-virtual-mailbox-domains.cf
+      owner: root
+      group: root
+      mode: '644'
+  - name: Copy Postfix mysql-virtual-mailbox-maps.cf template
+    template:
+      src: postfix/mysql-virtual-mailbox-maps.cf.j2
+      dest: /etc/postfix/mysql-virtual-mailbox-maps.cf
+      owner: root
+      group: root
+      mode: '644'
+
+- name: Copy Rsyslog configuration
+  copy:
+    src: rsyslog.d
+    dest: /etc/
+    owner: root
+    group: root
+    directory_mode: '755'
+    mode: '644'
+
+- name: Copy OpenDKIM configuration
+  copy:
+    src: opendkim
+    dest: /etc/
+    owner: root
+    group: root
+    directory_mode: '755'
+    mode: '644'
+
+- name: Copy OpenDKIM templates
+  block:
+  - name: Copy OpenDKIM folder templates
+    template:
+      src: "{{ item }}"
+      dest: "/etc/opendkim/{{ item | basename | regex_replace('\\.j2$', '') }}"
+      owner: root
+      group: root
+      directory_mode: '755'
+      mode: '644'
+    with_fileglob:
+    - ../templates/opendkim/*.j2  # Always operates from the files folder
+  - name: Copy OpenDKIM opendkim.conf template
+    template:
+      src: opendkim.conf.j2
+      dest: /etc/opendkim.conf
+      owner: root
+      group: root
+      mode: '644'
+
+- name: Create OpenDKIM Postfix chroot socket folder
+  file:
+    state: directory
+    path: /var/spool/postfix/opendkim
+    owner: opendkim
+    group: postfix
+    mode: '770'
+
+- name: Copy Fail2Ban configuration
+  copy:
+    src: fail2ban
+    dest: /etc/
+    owner: root
+    group: root
+    directory_mode: '755'
+    mode: '644'
+
+- name: Create the vmail group
+  group:
+    name: vmail
+    gid: 5000
+    state: present
+
+- name: Create the vmail user
+  user:
+    name: vmail
+    uid: 5000
+    group: vmail
+    home: /var/mail
+    shell: /usr/sbin/nologin
+    state: present
+    create_home: yes
+
+- name: Create the root mailbox directory
+  file:
+    path: "/var/mail/vhosts/{{ domain }}"
+    state: directory
+    mode: '2750'
+    owner: vmail
+    group: vmail
+    recurse: yes

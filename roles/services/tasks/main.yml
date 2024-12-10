@@ -1,0 +1,39 @@
+- name: Restart and enable services
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - rsyslog
+    - mariadb
+    - postfix
+    - dovecot
+    - opendkim
+    - fail2ban
+
+- name: Restart postfix service, once again  # "postfix reload" does not take into account all changes and require a restart
+  service:
+    name: postfix
+    state: restarted
+
+- name: Check if opendkim.sock exists  # OpenDKIM does not inform us when the socket is deleted when Postfix is restarted
+  stat:
+    path: /var/spool/postfix/opendkim/opendkim.sock
+  register: opendkim_sock
+
+- name: Restart OpenDKIM service if opendkim.sock does not exist
+  service:
+    name: opendkim
+    state: restarted
+  when: not opendkim_sock.stat.exists
+
+- name: Check if auth sock exists  # When Postfix smtpd trottle, the dovecot auth socket disappear
+  stat:
+    path: /var/spool/postfix/private/auth
+  register: dovecot_sock
+
+- name: Restart Dovecot service if auth socket does not exist
+  service:
+    name: dovecot
+    state: restarted
+  when: not dovecot_sock.stat.exists

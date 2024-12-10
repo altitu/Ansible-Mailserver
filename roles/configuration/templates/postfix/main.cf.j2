@@ -1,0 +1,83 @@
+# Basic settings
+myhostname = {{ hostname }}
+mydomain = {{ domain }}
+myorigin = /etc/mailname
+mydestination = localhost.$mydomain, localhost
+
+# Networking settings
+inet_interfaces = all
+inet_protocols = ipv4
+mynetworks = 127.0.0.0/8
+
+# SMTP settings
+smtpd_banner = $myhostname ESMTP $mail_name (Debian/GNU)
+biff = no
+append_dot_mydomain = no
+
+# TLS settings
+smtpd_tls_cert_file=/etc/letsencrypt/live/{{ hostname }}/fullchain.pem
+smtpd_tls_key_file=/etc/letsencrypt/live/{{ hostname }}/privkey.pem
+smtpd_use_tls=yes
+smtpd_recipient_restrictions = permit_sasl_authenticated,permit_mynetworks,reject_unauth_destination
+smtpd_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
+smtpd_tls_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
+smtp_tls_mandatory_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
+smtp_tls_protocols = !SSLv2, !SSLv3, !TLSv1, !TLSv1.1
+
+
+# Cache TLS sessions
+smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
+smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
+
+# Activate TLS for outgoing mails
+smtp_tls_security_level =  encrypt
+smtp_tls_loglevel = 1
+
+# Path to CA the file bundle to check the certificates
+smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+smtpd_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+
+# SASL authentication
+smtpd_sasl_auth_enable = yes
+smtpd_tls_security_level = encrypt
+smtpd_tls_auth_only = no
+smtpd_sasl_security_options = noanonymous
+smtpd_sasl_local_domain = $myhostname
+broken_sasl_auth_clients = yes
+smtpd_sasl_type = dovecot
+smtpd_sasl_path = private/auth
+
+# Recipient restrictions
+smtpd_recipient_restrictions = permit_sasl_authenticated,permit_mynetworks,reject_unauth_destination
+
+# Email size limit
+message_size_limit = 314572800
+#300MiB
+mailbox_size_limit = 157286400000
+#150Gib
+
+# Use virtual users
+virtual_mailbox_domains = mysql:/etc/postfix/mysql-virtual-mailbox-domains.cf
+virtual_mailbox_maps = mysql:/etc/postfix/mysql-virtual-mailbox-maps.cf
+virtual_alias_maps = mysql:/etc/postfix/mysql-virtual-alias-maps.cf
+virtual_minimum_uid = 100
+virtual_uid_maps = static:5000
+virtual_gid_maps = static:5000
+virtual_transport = lmtp:unix:private/dovecot-lmtp
+
+# Disable backward-compatibility
+compatibility_level = 3.6
+
+# Log if needed
+#maillog_file = /var/log/postfix.log
+#maillog_file_permissions = 0644
+
+# Parameters to enhance security
+smtpd_helo_required = yes
+smtpd_helo_restrictions = permit_mynetworks, permit_sasl_authenticated, reject_non_fqdn_helo_hostname, reject_invalid_helo_hostname
+
+# DKIM parameters
+milter_default_action = accept
+milter_protocol = 6
+smtpd_milters = unix:opendkim/opendkim.sock
+non_smtpd_milters = unix:opendkim/opendkim.sock

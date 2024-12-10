@@ -1,0 +1,15 @@
+packages:
+  - certbot
+  - fail2ban
+  - rsyslog
+  - opendkim-tools
+  - opendkim
+  - mariadb-server
+  - dovecot-core
+  - dovecot-imapd
+  - dovecot-lmtpd
+  - dovecot-mysql
+  - dovecot-pop3d
+  - postfix-mysql
+  - postfix
+  - iptables

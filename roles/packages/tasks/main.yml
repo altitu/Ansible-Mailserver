@@ -1,0 +1,5 @@
+- name: Install required packages without recommendations
+  apt:
+    name: "{{ packages }}"
+    state: present
+    install_recommends: no

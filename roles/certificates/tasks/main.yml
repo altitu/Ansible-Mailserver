@@ -1,0 +1,6 @@
+- name: Generate certificates with Certbot
+  command:
+    cmd: certbot certonly --standalone -d "{{ hostname }}" --non-interactive --agree-tos -m "{{ certbot_register_email }}"
+    creates: "/etc/letsencrypt/live/{{ hostname }}/fullchain.pem"
+  register: certbot_result
+  changed_when: certbot_result.rc == 0

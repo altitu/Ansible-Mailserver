@@ -1,0 +1,53 @@
+-- Create the database
+CREATE DATABASE IF NOT EXISTS mailserver;
+USE mailserver;
+
+-- Create the tables for virtual domains
+CREATE TABLE IF NOT EXISTS virtual_domains (
+    id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    PRIMARY KEY (id)
+);
+
+-- Create the table for new virtual users
+CREATE TABLE IF NOT EXISTS virtual_users (
+    id INT NOT NULL AUTO_INCREMENT,
+    domain_id INT NOT NULL,
+    password VARCHAR(106) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY email (email),
+    FOREIGN KEY (domain_id) REFERENCES virtual_domains(id) ON DELETE CASCADE
+);
+
+-- Create the table for new virtual aliases
+CREATE TABLE IF NOT EXISTS virtual_aliases (
+    id INT NOT NULL AUTO_INCREMENT,
+    domain_id INT NOT NULL,
+    source VARCHAR(100) NOT NULL,
+    destination VARCHAR(100) NOT NULL,
+    PRIMARY KEY (id),
+    FOREIGN KEY (domain_id) REFERENCES virtual_domains(id) ON DELETE CASCADE
+);
+
+-- Create a MySQL user for Postfix and Dovecot
+CREATE USER IF NOT EXISTS 'mailuser'@'localhost' IDENTIFIED BY '{{ mail_bdd_user_password }}';
+GRANT SELECT ON mailserver.* TO 'mailuser'@'localhost';
+
+-- Create a MySQL user with administration privileges
+CREATE USER IF NOT EXISTS 'mailmaster'@'localhost' IDENTIFIED BY '{{ mail_bdd_master_password }}';
+GRANT SELECT, INSERT, ALTER, DELETE ON mailserver.* TO 'mailmaster'@'localhost';
+
+-- Apply changes
+FLUSH PRIVILEGES;
+
+-- Insert a new virtual domain
+INSERT INTO virtual_domains (name) VALUES ('{{ domain }}');
+
+-- Insert a virtual user with a hashed password
+INSERT INTO virtual_users (domain_id, password, email) VALUES
+(1, ENCRYPT('{{ mail_dmarc_password }}', CONCAT('$6$', SUBSTRING(SHA(RAND()), -16))), 'dmarc-reports@{{ domain }}');
+
+-- Insert a virtual alias
+INSERT INTO virtual_aliases (domain_id, source, destination) VALUES
+(1, 'alias@{{ domain }}', 'dmarc-reports@{{ domain }}');

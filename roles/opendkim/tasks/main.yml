@@ -1,0 +1,38 @@
+- name: Create and set permissions on OpenDKIM keys
+  file:
+    path: /etc/opendkim/keys/
+    state: directory
+    owner: opendkim
+    group: opendkim
+    mode: '750'
+
+- name: Generate OpenDKIM keys
+  command: 
+    cmd: opendkim-genkey -s mail -d "{{ hostname }}"
+    chdir: /etc/opendkim/keys/
+    creates: "/etc/opendkim/keys/mail.private"
+
+- name: Set OpenDKIM keyfiles permissions
+  block:
+  - name: Set OpenDKIM mail.private permission
+    file: 
+      path: /etc/opendkim/keys/mail.private
+      state: file
+      owner: opendkim
+      group: opendkim
+      mode: '600'
+  - name: Set OpenDKIM mail.txt permission
+    file: 
+      path: /etc/opendkim/keys/mail.txt
+      state: file
+      owner: opendkim
+      group: opendkim
+      mode: '600'
+
+- name: Display OpenDKIM public key
+  shell: cat /etc/opendkim/keys/mail.txt
+  register: opendkim_key
+
+- name: Show OpenDKIM DNS TXT record
+  debug:
+    msg: "To configure dkim, please add a new txt record in your dns zone as follow: {{ opendkim_key.stdout }}"

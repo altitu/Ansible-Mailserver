@@ -1,0 +1,20 @@
+- name: Copy mailserver SQL template
+  template:
+    src: setup_mailserver.sql.j2
+    dest: /tmp/setup_mailserver.sql
+
+- name: Create mailserver database
+  shell: "mysql -u root -e 'CREATE DATABASE IF NOT EXISTS mailserver;'"
+
+- name: Check if the schema is already in place
+  shell: "mysql -u root mailserver -e 'SHOW TABLES;'"
+  register: bdd_schema_already_in_place
+
+- name: Import mailserver database schema
+  shell: "mysql -u root mailserver < /tmp/setup_mailserver.sql"
+  when: bdd_schema_already_in_place.stdout == ""
+
+- name: Delete the sql bootstrap script
+  file: 
+    path: /tmp/setup_mailserver.sql
+    state: absent

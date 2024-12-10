@@ -1,0 +1,17 @@
+Syslog yes
+UMask 002
+Domain {{ domain }}
+KeyFile /etc/opendkim/keys/mail.private
+Selector mail
+Socket local:/var/spool/postfix/opendkim/opendkim.sock
+PidFile /var/run/opendkim/opendkim.pid
+UserID opendkim:postfix
+
+AutoRestart             Yes
+AutoRestartRate         10/1h
+Background              Yes
+Canonicalization        relaxed/simple
+ExternalIgnoreList      refile:/etc/opendkim/TrustedHosts
+InternalHosts           refile:/etc/opendkim/TrustedHosts
+KeyTable                refile:/etc/opendkim/KeyTable
+SigningTable            refile:/etc/opendkim/SigningTable

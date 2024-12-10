@@ -1,0 +1,40 @@
+- hosts: mailserver
+  become: true
+
+  vars_prompt:
+  - name: hostname
+    prompt: "What hostname should the mailserver adopt?"
+    default: mail.example.com
+    private: false
+
+  - name: certbot_register_email
+    prompt: "Which email to register a certificate with certbot ?"
+
+  - name: mail_bdd_user_password
+    prompt: "What should be the MariaDB password of the user 'mailuser' allowed to add or remove emails and aliases ?"
+
+  - name: mail_bdd_master_password
+    prompt: "What should be the MariaDB password of the user 'mailmaster' which can alter the db schema ?"
+
+  - name: mail_dmarc_password
+    prompt: "What should be the password of the dmarc-reports@{{ hostname }} email account ?"
+
+  vars:
+    hostname: "placeholder"
+    domain: "placeholder"
+
+  pre_tasks:
+    - name: Derive the domain variable from the hostname
+      set_fact:
+        domain: "{{ hostname | regex_replace('^[^.]+\\.', '') }}"
+        cacheable: true
+
+  roles:
+    - common
+    - hostname
+    - packages
+    - configuration
+    - database
+    - certificates
+    - opendkim
+    - services
